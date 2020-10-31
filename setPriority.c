@@ -17,6 +17,6 @@ main(int argc, char *argv[])
     }
     else
     {
-        setPriority(argv[1], argv[2]); //convert string to int????
+        //setPriority(argv[1], argv[2]); //convert string to int????
     }
 }

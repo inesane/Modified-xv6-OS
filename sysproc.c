@@ -115,7 +115,7 @@ int sys_set_priority(void) // set_priority system call
   {
     return -1;
   }
-  if(argint(1, &new_priority)<0)
+  if(argint(1, &pid)<0)
   {
     return -1;
   }
