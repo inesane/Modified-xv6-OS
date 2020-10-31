@@ -376,6 +376,7 @@ waitx(int *wtime, int *rtime)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+
 /*void
 scheduler(void)
 {
@@ -411,7 +412,6 @@ scheduler(void)
 
   }
 }*/
-
 
 //FCFS
 /*void scheduler(void)
@@ -452,27 +452,32 @@ scheduler(void)
   }
 }*/
 
-//MLFQ
-void
-scheduler(void)
+//PRIORITY
+void scheduler(void)
 {
   struct proc *p;
+  struct proc *ptemp;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
+  // cprintf("hello\n");
   for(;;){
-    // Enable interrupts on this processor.
     sti();
 
-    // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+    {
+      struct proc *most_priority = p;
       if(p->state != RUNNABLE)
         continue;
-
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
+      most_priority = p;
+      for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
+      {
+        if(ptemp->state !=RUNNABLE)
+          continue;
+        if(most_priority->priority > ptemp->priority)
+          most_priority=ptemp;
+      }
+      p=most_priority;
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
@@ -480,8 +485,6 @@ scheduler(void)
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
       c->proc = 0;
     }
     release(&ptable.lock);
@@ -688,4 +691,5 @@ int set_priority(int new_priority, int pid)
     }
   }
   release(&ptable.lock);
+  return 0;
 }
