@@ -38,7 +38,8 @@ main(int argc, char *argv[])
         }
         else
         {
-            setPriority(new_priority, pid); //convert string to int????
+            set_priority(new_priority, pid); //convert string to int????
         } //convert string to int????
     }
+    exit();
 }

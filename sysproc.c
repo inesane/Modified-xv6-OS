@@ -122,3 +122,8 @@ int sys_set_priority(void) // set_priority system call
 
   return set_priority(new_priority, pid);
 }
+
+int sys_ps(void)
+{
+  return ps();
+}

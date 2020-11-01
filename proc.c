@@ -96,7 +96,7 @@ found:
   p->cpu_ticks=0;
   p->curr_queue=0;
   p->recent_insert=ticks;
-  p->times_called=0;
+  p->n_run=0;
   for(int i=0;i<5;i++)
   {
     p->queues[i]=0;
@@ -380,9 +380,21 @@ waitx(int *wtime, int *rtime)
 void aging(void)
 {
   struct proc *p;
+  int limit=5;
+  int wait_time_limit[5];
   for(int i=0;i<5;i++)
   {
-    
+    wait_time_limit[i]=limit;
+    limit*=2;
+  }
+  for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+  {
+    if(p->state!=RUNNABLE)
+      continue;
+    if(ticks - p->recent_insert > wait_time_limit[p->curr_queue] && p->cpu_ticks == 0 && p->curr_queue != 0)
+    {
+      p->curr_queue--;
+    }
   }
 }
 
@@ -395,7 +407,8 @@ void aging(void)
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
 
-/*void
+#ifdef RR
+void
 scheduler(void)
 {
   struct proc *p;
@@ -418,6 +431,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      if(p->cpu_ticks==0)
+        p->n_run++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -429,9 +444,10 @@ scheduler(void)
     release(&ptable.lock);
 
   }
-}*/
+}
+#endif
 
-//FCFS
+#ifdef FCFS
 void scheduler(void)
 {
   struct proc *p;
@@ -459,6 +475,8 @@ void scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      if(p->cpu_ticks==0)
+        p->n_run++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -469,8 +487,9 @@ void scheduler(void)
 
   }
 }
+#endif
 
-//PRIORITY
+#ifdef PBS
 void scheduler(void)
 {
   struct proc *p;
@@ -499,6 +518,8 @@ void scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      if(p->cpu_ticks==0)
+        p->n_run++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -509,8 +530,9 @@ void scheduler(void)
 
   }
 }
+#endif
 
-//MLFQ
+#ifdef MLFQ
 void
 scheduler(void)
 {
@@ -525,6 +547,7 @@ scheduler(void)
 // find process in highest queue with highest cpu burst time. once process is found go through all queues below them, if the number of ticks in queue > 0 reinsert it back into the queue
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    aging();
     int flag=0;
     struct proc *least_time;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
@@ -534,7 +557,7 @@ scheduler(void)
       {
         for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
         {
-          if(ptemp->state !=RUNNABLE)
+          if(ptemp->state != RUNNABLE)
             continue;
           if(p->recent_insert > ptemp->recent_insert)
             least_time=ptemp;
@@ -546,7 +569,7 @@ scheduler(void)
       {
         for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
         {
-          if(ptemp->state !=RUNNABLE)
+          if(ptemp->state != RUNNABLE)
             continue;
           if(p->recent_insert > ptemp->recent_insert)
             least_time=ptemp;
@@ -558,7 +581,7 @@ scheduler(void)
       {
         for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
         {
-          if(ptemp->state !=RUNNABLE)
+          if(ptemp->state != RUNNABLE)
             continue;
           if(p->recent_insert > ptemp->recent_insert)
             least_time=ptemp;
@@ -570,7 +593,7 @@ scheduler(void)
       {
         for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
         {
-          if(ptemp->state !=RUNNABLE)
+          if(ptemp->state != RUNNABLE)
             continue;
           if(p->recent_insert > ptemp->recent_insert)
             least_time=ptemp;
@@ -582,7 +605,7 @@ scheduler(void)
       {
         for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
         {
-          if(ptemp->state !=RUNNABLE)
+          if(ptemp->state != RUNNABLE)
             continue;
           if(p->recent_insert > ptemp->recent_insert)
             least_time=ptemp;
@@ -596,6 +619,8 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      if(p->cpu_ticks==0)
+        p->n_run++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -608,6 +633,7 @@ scheduler(void)
 
   }
 }
+#endif
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
@@ -635,32 +661,48 @@ sched(void)
   mycpu()->intena = intena;
 }
 
+void
+update(void)
+{
+  acquire(&ptable.lock);
+  struct proc *p;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if(p->state==RUNNING)
+    {
+      p->rtime++;
+      p->cpu_ticks++;
+      p->queues[p->curr_queue] += 1;
+      int i=1;
+      for(int j=0;j<p->curr_queue;j++)
+      {
+        i=i*2;
+      }
+      if(p->cpu_ticks>=i)
+      {
+        if(p->curr_queue==4)
+        {
+        }
+        else
+        {
+          #ifdef MLFQ
+          p->curr_queue++;
+          #endif
+        }
+        p->recent_insert=ticks;
+        p->cpu_ticks=0;
+      }
+    }
+  }
+  release(&ptable.lock);
+}
+
 // Give up the CPU for one scheduling round.
 void
 yield(void)
 {
   acquire(&ptable.lock);  //DOC: yieldlock
-  myproc()->rtime++;
   myproc()->state = RUNNABLE;
-  myproc()->cpu_ticks++;
-  myproc()->queues[myproc()->curr_queue] += 1;
-  int i=1;
-  for(int j=0;j<myproc()->curr_queue;j++)
-  {
-    i=i*2;
-  }
-  if(myproc()->cpu_ticks==i)
-  {
-    if(myproc()->curr_queue==4)
-    {
-    }
-    else
-    {
-      myproc()->curr_queue++;
-    }
-    myproc()->recent_insert=ticks;
-    myproc()->cpu_ticks=0;
-  }
   sched();
   release(&ptable.lock);
 }
@@ -840,12 +882,31 @@ int set_priority(int new_priority, int pid)
 int ps(void)
 {
   struct proc *p;
-  cprintf("PID\tPriority\tState\tr_time\tw_time\tn_run\tcur_q\tq0\tq1\tq2\tq3\tq4\n");
+  cprintf("PID\tPriority\tState\t\tr_time\tw_time\tn_run\tcur_q\tq0\tq1\tq2\tq3\tq4\n");
+  acquire(&ptable.lock);
   for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
   {
     if(p->state == EMBRYO)
     {
-      cprintf("%d\t%d\tEMBRYO\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime);
+      cprintf("%d\t%d\t\tEMBRYO\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
+    }
+    else if(p->state == SLEEPING)
+    {
+      cprintf("%d\t%d\t\tSLEEPING\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
+    }
+    if(p->state == RUNNABLE)
+    {
+      cprintf("%d\t%d\t\tRUNNABLE\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
+    }
+    if(p->state == RUNNING)
+    {
+      cprintf("%d\t%d\t\tRUNNING\t\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
+    }
+    if(p->state == ZOMBIE)
+    {
+      cprintf("%d\t%d\t\tZOMBIE\t\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
     }
   }
+  release(&ptable.lock);
+  return 0;
 }
