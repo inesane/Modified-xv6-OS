@@ -55,6 +55,11 @@ struct proc {
   int total_stime;
   int last_stime;
   int priority;
+  int queues[5]; // number of times called by cpu in current queue
+  int curr_queue; // current queue
+  int recent_insert; // number of ticks inserted in most recent cpu cycle
+  int cpu_ticks; // number of ticks in current cpu cycle
+  int times_called;
 };
 
 // Process memory is laid out contiguously, low addresses first:

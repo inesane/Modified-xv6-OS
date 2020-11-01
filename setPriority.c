@@ -17,6 +17,28 @@ main(int argc, char *argv[])
     }
     else
     {
-        //setPriority(argv[1], argv[2]); //convert string to int????
+        int i=0;
+        int new_priority=0, pid=0;
+        while(argv[1][i]!='\0')
+        {
+            new_priority *= 10;
+            new_priority += argv[1][i]-(int)'0';
+            i++;
+        }
+        i=0;
+        while(argv[2][i]!='\0')
+        {
+            pid *= 10;
+            pid += argv[2][i]-(int)'0';
+            i++;
+        }
+        if(new_priority < 0 || new_priority > 100)
+        {
+            printf(2, "Invalid priority number\n");
+        }
+        else
+        {
+            setPriority(new_priority, pid); //convert string to int????
+        } //convert string to int????
     }
 }

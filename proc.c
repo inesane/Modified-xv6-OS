@@ -93,6 +93,14 @@ found:
   p->total_stime = 0;
   p->last_stime = 0;
   p->priority=60;
+  p->cpu_ticks=0;
+  p->curr_queue=0;
+  p->recent_insert=ticks;
+  p->times_called=0;
+  for(int i=0;i<5;i++)
+  {
+    p->queues[i]=0;
+  }
 
 cprintf("Process %d creation time %d\n", p->pid, p->ctime);
 
@@ -368,6 +376,16 @@ waitx(int *wtime, int *rtime)
   }
 }
 
+//aging function
+void aging(void)
+{
+  struct proc *p;
+  for(int i=0;i<5;i++)
+  {
+    
+  }
+}
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -414,7 +432,7 @@ scheduler(void)
 }*/
 
 //FCFS
-/*void scheduler(void)
+void scheduler(void)
 {
   struct proc *p;
   struct proc *ptemp;
@@ -450,7 +468,7 @@ scheduler(void)
     release(&ptable.lock);
 
   }
-}*/
+}
 
 //PRIORITY
 void scheduler(void)
@@ -492,6 +510,105 @@ void scheduler(void)
   }
 }
 
+//MLFQ
+void
+scheduler(void)
+{
+  struct proc *p;
+  struct proc *ptemp;
+  struct cpu *c = mycpu();
+  c->proc = 0;
+  
+  for(;;){
+    // Enable interrupts on this processor.
+    sti();
+// find process in highest queue with highest cpu burst time. once process is found go through all queues below them, if the number of ticks in queue > 0 reinsert it back into the queue
+    // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    int flag=0;
+    struct proc *least_time;
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
+      if(p->curr_queue==0)
+      {
+        for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
+        {
+          if(ptemp->state !=RUNNABLE)
+            continue;
+          if(p->recent_insert > ptemp->recent_insert)
+            least_time=ptemp;
+        }
+        p=least_time;
+        flag=1;
+      }
+      if(flag == 0 && p->curr_queue==1)
+      {
+        for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
+        {
+          if(ptemp->state !=RUNNABLE)
+            continue;
+          if(p->recent_insert > ptemp->recent_insert)
+            least_time=ptemp;
+        }
+        p=least_time;
+        flag=1;
+      }
+      if(flag == 0 && p->curr_queue==2)
+      {
+        for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
+        {
+          if(ptemp->state !=RUNNABLE)
+            continue;
+          if(p->recent_insert > ptemp->recent_insert)
+            least_time=ptemp;
+        }
+        p=least_time;
+        flag=1;
+      }
+      if(flag == 0 && p->curr_queue==3)
+      {
+        for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
+        {
+          if(ptemp->state !=RUNNABLE)
+            continue;
+          if(p->recent_insert > ptemp->recent_insert)
+            least_time=ptemp;
+        }
+        p=least_time;
+        flag=1;
+      }
+      if(flag == 0 && p->curr_queue==4)
+      {
+        for(ptemp=ptable.proc;ptemp<&ptable.proc[NPROC];ptemp++)
+        {
+          if(ptemp->state !=RUNNABLE)
+            continue;
+          if(p->recent_insert > ptemp->recent_insert)
+            least_time=ptemp;
+        }
+        p=least_time;
+        flag=1;
+      }
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
+      c->proc = p;
+      switchuvm(p);
+      p->state = RUNNING;
+
+      swtch(&(c->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      c->proc = 0;
+    }
+    release(&ptable.lock);
+
+  }
+}
+
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
 // intena because intena is a property of this
@@ -525,6 +642,25 @@ yield(void)
   acquire(&ptable.lock);  //DOC: yieldlock
   myproc()->rtime++;
   myproc()->state = RUNNABLE;
+  myproc()->cpu_ticks++;
+  myproc()->queues[myproc()->curr_queue] += 1;
+  int i=1;
+  for(int j=0;j<myproc()->curr_queue;j++)
+  {
+    i=i*2;
+  }
+  if(myproc()->cpu_ticks==i)
+  {
+    if(myproc()->curr_queue==4)
+    {
+    }
+    else
+    {
+      myproc()->curr_queue++;
+    }
+    myproc()->recent_insert=ticks;
+    myproc()->cpu_ticks=0;
+  }
   sched();
   release(&ptable.lock);
 }
@@ -604,6 +740,8 @@ wakeup1(void *chan)
     {
       p->state = RUNNABLE;
       p->total_stime += ticks - p->last_stime;
+      p->cpu_ticks=0;
+      p->recent_insert=ticks;
     }
   }
 }
@@ -681,15 +819,33 @@ int set_priority(int new_priority, int pid)
 {
   struct proc *p;
 
-  acquire(&ptable.lock);
+  if(new_priority < 0 || new_priority > 100)
+    return -1;
+  else
+  {
+    acquire(&ptable.lock);
+    for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
+    {
+      if(p->pid==pid)
+      {
+        p->priority=new_priority;
+        break;
+      }
+    }
+    release(&ptable.lock);
+    return 0;
+  }
+}
+
+int ps(void)
+{
+  struct proc *p;
+  cprintf("PID\tPriority\tState\tr_time\tw_time\tn_run\tcur_q\tq0\tq1\tq2\tq3\tq4\n");
   for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
   {
-    if(p->pid==pid)
+    if(p->state == EMBRYO)
     {
-      p->priority=new_priority;
-      break;
+      cprintf("%d\t%d\tEMBRYO\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime);
     }
   }
-  release(&ptable.lock);
-  return 0;
 }
