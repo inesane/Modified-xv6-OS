@@ -40,9 +40,14 @@ int main(int argc, char *argv[])
       // set_priority(100-(20+j),pid); // will only matter for PBS, comment it out if not implemented yet (better priorty for more IO intensive jobs)
     }
   }
+  // int wtime, rtime, w=0;
   for (j = 0; j < number_of_processes+5; j++)
   {
+    // waitx(&wtime, &rtime);
+    // printf(1, "wtime = %d, rtime = %d\n", wtime, rtime);
+    // w+=wtime;
     wait();
   }
+  // printf(1, "total time = %d\n", w);
   exit();
 }

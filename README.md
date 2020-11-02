@@ -20,8 +20,25 @@ setPriority - the setPriority user program changes the priority of a given proce
 
 The Following Scheduling Algorithms have been implemented (RR is the original scheduling algorithm used, the other 3 have been added):
 Round-Robin (RR) - preemptive scheduling algorithm that executes each process for a given time period. After the completion of that time period, it is preempted and other processes are allowed to execute for the same time period
-First Come First Serve (FCFS) - selects the process with the lowest creation time and runs it to completion
+First Come First Serve (FCFS) - non-preemptive scheduling algorithm that selects the process with the lowest creation time and runs it to completion
 Priority Based Scheduling (PBS) - selects the process with the highest priority. Implements Round-Robin in case multiple processes have the same priority. By default, the priority of each process has been set to 60
 Multi-Level Feedback Queue (MLFQ) - allows processes to move between various priority queues (in this case 5), based on how much CPU time they take to execute and CPU bursts
 
+Reason for Scheduling Getting Exploited
+If a process calls a large number of cpu cycles and then calls a few I/O calls before exceeding its time slice, then it will stay in a queue in a high priority and still be able to continue to call a large number of cpu cycles
+
 Performance Comparisons Between Scheduling Algorithms
+On running 'benchmark', we get the total number of ticks taken to run each scheduling algorithm for 2 seperate runnings as,
+RR-8941, 10326
+FCFS-12755, 11175
+PBS-5763, 4724
+MLFQ-7481, 8304
+
+Bonus
+
+The Bonus has been implemented as well
+Here there are 2 different graphs, both with 4 processes
+
+In the first graph, 2 of the processes are cpu bound processes and 2 are I/O bound processes. The 2 processes that are cpu bound quickly climb to the 5th queue and are executed there while the I/O bound processes stay at the first queue as they are sleeping for a large portion of time.
+
+We can show that the 2 processes that climb are cpu bound while the 2 that remain with the 1st queue are I/O bound with the second graph. In the second graph, all 4 processes are cpu bound and we can see that all the processes climb quickly to the 5th queue and are executed there. Hence the 2 processes that climbed in the first graph are the cpu bound processes while the other 2 processes that stayed at the first queue are I/O bound

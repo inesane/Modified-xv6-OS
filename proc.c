@@ -379,21 +379,26 @@ waitx(int *wtime, int *rtime)
 //aging function
 void aging(void)
 {
+  //cprintf("Entered aging\n");
   struct proc *p;
-  int limit=5;
+  int limit=50;
   int wait_time_limit[5];
   for(int i=0;i<5;i++)
   {
     wait_time_limit[i]=limit;
-    limit*=2;
+    // limit*=2;
   }
   for(p=ptable.proc;p<&ptable.proc[NPROC];p++)
   {
-    if(p->state!=RUNNABLE)
-      continue;
+    // if(p->state!=RUNNABLE)
+      // continue;
     if(ticks - p->recent_insert > wait_time_limit[p->curr_queue] && p->cpu_ticks == 0 && p->curr_queue != 0)
     {
       p->curr_queue--;
+      // if(p->state!=ZOMBIE && p->state != UNUSED)
+      // {
+      //   cprintf("GRAPH %d %d %d\n", p->pid, p->curr_queue, ticks);
+      // }
     }
   }
 }
@@ -433,6 +438,8 @@ scheduler(void)
       p->state = RUNNING;
       if(p->cpu_ticks==0)
         p->n_run++;
+      p->queues[p->curr_queue] += 1;
+      p->cpu_ticks++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -477,6 +484,8 @@ void scheduler(void)
       p->state = RUNNING;
       if(p->cpu_ticks==0)
         p->n_run++;
+      p->queues[p->curr_queue] += 1;
+      p->cpu_ticks++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -520,6 +529,8 @@ void scheduler(void)
       p->state = RUNNING;
       if(p->cpu_ticks==0)
         p->n_run++;
+      p->queues[p->curr_queue] += 1;
+      p->cpu_ticks++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -582,6 +593,8 @@ scheduler(void)
       p->state = RUNNING;
       if(p->cpu_ticks==0)
         p->n_run++;
+      p->queues[p->curr_queue] += 1;
+      p->cpu_ticks++;
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
@@ -710,11 +723,13 @@ update(void)
   struct proc *p;
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
+    // if(p->state!=ZOMBIE && p->state != UNUSED && p->pid > 3)
+    // {
+    //   cprintf("GRAPH %d %d %d\n", p->pid, p->curr_queue, ticks);
+    // }
     if(p->state==RUNNING)
     {
       p->rtime++;
-      p->cpu_ticks++;
-      p->queues[p->curr_queue] += 1;
       int i=1;
       for(int j=0;j<p->curr_queue;j++)
       {
@@ -738,7 +753,7 @@ update(void)
   }
   release(&ptable.lock);
 }
-
+//pid, queue and ticks for all except zombie, unused
 // Give up the CPU for one scheduling round.
 void
 yield(void)
@@ -933,9 +948,9 @@ int ps(void)
     {
       cprintf("%d\t%d\t\tEMBRYO\t\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
     }
-    else if(p->state == SLEEPING)
+    if(p->state == SLEEPING)
     {
-      cprintf("%d\t%d\t\tSLEEPING\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
+      cprintf("%d\t%d\t\tSLEEPING\t%d\t0\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
     }
     if(p->state == RUNNABLE)
     {
@@ -947,7 +962,7 @@ int ps(void)
     }
     if(p->state == ZOMBIE)
     {
-      cprintf("%d\t%d\t\tZOMBIE\t\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, ticks - p->recent_insert, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
+      cprintf("%d\t%d\t\tZOMBIE\t\t%d\t0\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p->pid, p->priority,p->rtime, p->n_run, p->curr_queue, p->queues[0], p->queues[1], p->queues[2], p->queues[3], p->queues[4]);
     }
   }
   release(&ptable.lock);
