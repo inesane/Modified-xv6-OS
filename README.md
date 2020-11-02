@@ -1,5 +1,9 @@
 Enhancing xv6 OS
 
+To Run
+make clean
+make qemu SCHEDULER=<SCHEDULER> (The input 'SCHEDULER' is the scheduling algorithm we would like to use to run the processes. The options are listed below)
+
 System Calls
 waitx - The waitx system call waits for a process to terminate and gives the wait time and run time of that process
 
@@ -16,8 +20,8 @@ setPriority - the setPriority user program changes the priority of a given proce
 
 The Following Scheduling Algorithms have been implemented (RR is the original scheduling algorithm used, the other 3 have been added):
 Round-Robin (RR) - preemptive scheduling algorithm that executes each process for a given time period. After the completion of that time period, it is preempted and other processes are allowed to execute for the same time period
-First Come Fist Serve (FCFS) - selects the process with the lowest creation time and runs it to completion
-Priority Based Scheduling (PBS) - selects the process with the highest priority. Implements Round-Robin in case multiple processes have the same priority
+First Come First Serve (FCFS) - selects the process with the lowest creation time and runs it to completion
+Priority Based Scheduling (PBS) - selects the process with the highest priority. Implements Round-Robin in case multiple processes have the same priority. By default, the priority of each process has been set to 60
 Multi-Level Feedback Queue (MLFQ) - allows processes to move between various priority queues (in this case 5), based on how much CPU time they take to execute and CPU bursts
 
 Performance Comparisons Between Scheduling Algorithms
