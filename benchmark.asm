@@ -18,15 +18,15 @@ int main(int argc, char *argv[])
    e:	55                   	push   %ebp
    f:	89 e5                	mov    %esp,%ebp
   11:	53                   	push   %ebx
-  12:	31 db                	xor    %ebx,%ebx
-  14:	51                   	push   %ecx
-  15:	83 ec 10             	sub    $0x10,%esp
+  12:	51                   	push   %ecx
+  13:	83 ec 10             	sub    $0x10,%esp
   int j;
   for (j = 0; j < number_of_processes; j++)
-  18:	8b 0d 20 0b 00 00    	mov    0xb20,%ecx
-  1e:	85 c9                	test   %ecx,%ecx
-  20:	7f 14                	jg     36 <main+0x36>
-  22:	eb 54                	jmp    78 <main+0x78>
+  16:	8b 0d 20 0b 00 00    	mov    0xb20,%ecx
+  1c:	85 c9                	test   %ecx,%ecx
+  1e:	7e 3b                	jle    5b <main+0x5b>
+  20:	31 db                	xor    %ebx,%ebx
+  22:	eb 11                	jmp    35 <main+0x35>
   24:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
     if (pid < 0)
     {
@@ -34,106 +34,101 @@ int main(int argc, char *argv[])
       continue;
     }
     if (pid == 0)
-  28:	74 53                	je     7d <main+0x7d>
+  28:	74 5f                	je     89 <main+0x89>
   for (j = 0; j < number_of_processes; j++)
-  2a:	a1 20 0b 00 00       	mov    0xb20,%eax
-  2f:	83 c3 01             	add    $0x1,%ebx
-  32:	39 d8                	cmp    %ebx,%eax
-  34:	7e 27                	jle    5d <main+0x5d>
+  2a:	83 c3 01             	add    $0x1,%ebx
+  2d:	39 1d 20 0b 00 00    	cmp    %ebx,0xb20
+  33:	7e 26                	jle    5b <main+0x5b>
     int pid = fork();
-  36:	e8 30 03 00 00       	call   36b <fork>
+  35:	e8 31 03 00 00       	call   36b <fork>
     if (pid < 0)
-  3b:	85 c0                	test   %eax,%eax
-  3d:	79 e9                	jns    28 <main+0x28>
+  3a:	85 c0                	test   %eax,%eax
+  3c:	79 ea                	jns    28 <main+0x28>
       printf(1, "Fork failed\n");
-  3f:	83 ec 08             	sub    $0x8,%esp
+  3e:	83 ec 08             	sub    $0x8,%esp
   for (j = 0; j < number_of_processes; j++)
-  42:	83 c3 01             	add    $0x1,%ebx
+  41:	83 c3 01             	add    $0x1,%ebx
       printf(1, "Fork failed\n");
-  45:	68 48 08 00 00       	push   $0x848
-  4a:	6a 01                	push   $0x1
-  4c:	e8 8f 04 00 00       	call   4e0 <printf>
-  for (j = 0; j < number_of_processes; j++)
-  51:	a1 20 0b 00 00       	mov    0xb20,%eax
+  44:	68 48 08 00 00       	push   $0x848
+  49:	6a 01                	push   $0x1
+  4b:	e8 90 04 00 00       	call   4e0 <printf>
       continue;
-  56:	83 c4 10             	add    $0x10,%esp
+  50:	83 c4 10             	add    $0x10,%esp
   for (j = 0; j < number_of_processes; j++)
-  59:	39 d8                	cmp    %ebx,%eax
-  5b:	7f d9                	jg     36 <main+0x36>
+  53:	39 1d 20 0b 00 00    	cmp    %ebx,0xb20
+  59:	7f da                	jg     35 <main+0x35>
         ;
       // set_priority(100-(20+j),pid); // will only matter for PBS, comment it out if not implemented yet (better priorty for more IO intensive jobs)
     }
   }
   // int wtime, rtime, w=0;
-  for (j = 0; j < number_of_processes; j++)
-  5d:	85 c0                	test   %eax,%eax
-  5f:	7e 17                	jle    78 <main+0x78>
-  61:	31 db                	xor    %ebx,%ebx
-  63:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
-  67:	90                   	nop
+  for (j = 0; j < number_of_processes+5; j++)
+  5b:	83 3d 20 0b 00 00 fc 	cmpl   $0xfffffffc,0xb20
+  62:	7c 20                	jl     84 <main+0x84>
+  64:	31 db                	xor    %ebx,%ebx
+  66:	8d b4 26 00 00 00 00 	lea    0x0(%esi,%eiz,1),%esi
+  6d:	8d 76 00             	lea    0x0(%esi),%esi
   {
     // waitx(&wtime, &rtime);
     // printf(1, "wtime = %d, rtime = %d\n", wtime, rtime);
     // w+=wtime;
     wait();
-  68:	e8 0e 03 00 00       	call   37b <wait>
-  for (j = 0; j < number_of_processes; j++)
-  6d:	83 c3 01             	add    $0x1,%ebx
-  70:	39 1d 20 0b 00 00    	cmp    %ebx,0xb20
-  76:	7f f0                	jg     68 <main+0x68>
+  70:	e8 06 03 00 00       	call   37b <wait>
+  for (j = 0; j < number_of_processes+5; j++)
+  75:	a1 20 0b 00 00       	mov    0xb20,%eax
+  7a:	83 c3 01             	add    $0x1,%ebx
+  7d:	83 c0 04             	add    $0x4,%eax
+  80:	39 d8                	cmp    %ebx,%eax
+  82:	7d ec                	jge    70 <main+0x70>
   }
   // printf(1, "total time = %d\n", w);
   exit();
-  78:	e8 f6 02 00 00       	call   373 <exit>
+  84:	e8 ea 02 00 00       	call   373 <exit>
       for (volatile int k = 0; k < number_of_processes; k++)
-  7d:	c7 45 f4 00 00 00 00 	movl   $0x0,-0xc(%ebp)
-  84:	8b 45 f4             	mov    -0xc(%ebp),%eax
-  87:	3b 05 20 0b 00 00    	cmp    0xb20,%eax
-  8d:	7c 2d                	jl     bc <main+0xbc>
-  8f:	eb 5c                	jmp    ed <main+0xed>
-  91:	8d b4 26 00 00 00 00 	lea    0x0(%esi,%eiz,1),%esi
+  89:	c7 45 f4 00 00 00 00 	movl   $0x0,-0xc(%ebp)
+  90:	8b 45 f4             	mov    -0xc(%ebp),%eax
+  93:	3b 05 20 0b 00 00    	cmp    0xb20,%eax
+  99:	7c 29                	jl     c4 <main+0xc4>
+  9b:	eb 58                	jmp    f5 <main+0xf5>
+  9d:	8d 76 00             	lea    0x0(%esi),%esi
           sleep(200); //io time
-  98:	83 ec 0c             	sub    $0xc,%esp
-  9b:	68 c8 00 00 00       	push   $0xc8
-  a0:	e8 5e 03 00 00       	call   403 <sleep>
-  a5:	83 c4 10             	add    $0x10,%esp
+  a0:	83 ec 0c             	sub    $0xc,%esp
+  a3:	68 c8 00 00 00       	push   $0xc8
+  a8:	e8 56 03 00 00       	call   403 <sleep>
+  ad:	83 c4 10             	add    $0x10,%esp
       for (volatile int k = 0; k < number_of_processes; k++)
-  a8:	8b 45 f4             	mov    -0xc(%ebp),%eax
-  ab:	83 c0 01             	add    $0x1,%eax
-  ae:	89 45 f4             	mov    %eax,-0xc(%ebp)
-  b1:	8b 45 f4             	mov    -0xc(%ebp),%eax
-  b4:	3b 05 20 0b 00 00    	cmp    0xb20,%eax
-  ba:	7d 31                	jge    ed <main+0xed>
+  b0:	8b 45 f4             	mov    -0xc(%ebp),%eax
+  b3:	83 c0 01             	add    $0x1,%eax
+  b6:	89 45 f4             	mov    %eax,-0xc(%ebp)
+  b9:	8b 45 f4             	mov    -0xc(%ebp),%eax
+  bc:	3b 05 20 0b 00 00    	cmp    0xb20,%eax
+  c2:	7d 31                	jge    f5 <main+0xf5>
         if (k <= j)
-  bc:	8b 45 f4             	mov    -0xc(%ebp),%eax
-  bf:	39 d8                	cmp    %ebx,%eax
-  c1:	7e d5                	jle    98 <main+0x98>
+  c4:	8b 45 f4             	mov    -0xc(%ebp),%eax
+  c7:	39 d8                	cmp    %ebx,%eax
+  c9:	7e d5                	jle    a0 <main+0xa0>
           for (i = 0; i < 100000000; i++)
-  c3:	c7 45 f0 00 00 00 00 	movl   $0x0,-0x10(%ebp)
-  ca:	8b 45 f0             	mov    -0x10(%ebp),%eax
-  cd:	3d ff e0 f5 05       	cmp    $0x5f5e0ff,%eax
-  d2:	7f d4                	jg     a8 <main+0xa8>
-  d4:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
-  d8:	8b 45 f0             	mov    -0x10(%ebp),%eax
-  db:	83 c0 01             	add    $0x1,%eax
-  de:	89 45 f0             	mov    %eax,-0x10(%ebp)
-  e1:	8b 45 f0             	mov    -0x10(%ebp),%eax
-  e4:	3d ff e0 f5 05       	cmp    $0x5f5e0ff,%eax
-  e9:	7e ed                	jle    d8 <main+0xd8>
-  eb:	eb bb                	jmp    a8 <main+0xa8>
+  cb:	c7 45 f0 00 00 00 00 	movl   $0x0,-0x10(%ebp)
+  d2:	8b 45 f0             	mov    -0x10(%ebp),%eax
+  d5:	3d ff e0 f5 05       	cmp    $0x5f5e0ff,%eax
+  da:	7f d4                	jg     b0 <main+0xb0>
+  dc:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
+  e0:	8b 45 f0             	mov    -0x10(%ebp),%eax
+  e3:	83 c0 01             	add    $0x1,%eax
+  e6:	89 45 f0             	mov    %eax,-0x10(%ebp)
+  e9:	8b 45 f0             	mov    -0x10(%ebp),%eax
+  ec:	3d ff e0 f5 05       	cmp    $0x5f5e0ff,%eax
+  f1:	7e ed                	jle    e0 <main+0xe0>
+  f3:	eb bb                	jmp    b0 <main+0xb0>
       printf(1, "Process: %d Finished\n", getpid());
-  ed:	e8 01 03 00 00       	call   3f3 <getpid>
-  f2:	52                   	push   %edx
-  f3:	50                   	push   %eax
-  f4:	68 55 08 00 00       	push   $0x855
-  f9:	6a 01                	push   $0x1
-  fb:	e8 e0 03 00 00       	call   4e0 <printf>
+  f5:	e8 f9 02 00 00       	call   3f3 <getpid>
+  fa:	52                   	push   %edx
+  fb:	50                   	push   %eax
+  fc:	68 55 08 00 00       	push   $0x855
+ 101:	6a 01                	push   $0x1
+ 103:	e8 d8 03 00 00       	call   4e0 <printf>
       exit();
- 100:	e8 6e 02 00 00       	call   373 <exit>
- 105:	66 90                	xchg   %ax,%ax
- 107:	66 90                	xchg   %ax,%ax
- 109:	66 90                	xchg   %ax,%ax
- 10b:	66 90                	xchg   %ax,%ax
+ 108:	e8 66 02 00 00       	call   373 <exit>
  10d:	66 90                	xchg   %ax,%ax
  10f:	90                   	nop
 

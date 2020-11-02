@@ -102,7 +102,7 @@ found:
     p->queues[i]=0;
   }
 
-cprintf("Process %d creation time %d\n", p->pid, p->ctime);
+// cprintf("Process %d creation time %d\n", p->pid, p->ctime);
 
   release(&ptable.lock);
 
