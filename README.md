@@ -38,16 +38,16 @@ The `setPriority` user program changes the priority of a given process. It takes
 
 The following scheduling algorithms have been implemented (Round-Robin is the original scheduling algorithm used, the other three have been added):
 
-### Round-Robin (RR)
+### 1. Round-Robin (RR)
 A preemptive scheduling algorithm that executes each process for a given time period. After the completion of that time period, the process is preempted and other processes are allowed to execute for the same time period.
 
-### First Come First Serve (FCFS)
+### 2. First Come First Serve (FCFS)
 A non-preemptive scheduling algorithm that selects the process with the lowest creation time and runs it to completion.
 
-### Priority Based Scheduling (PBS)
+### 3. Priority Based Scheduling (PBS)
 Selects the process with the highest priority. Implements Round-Robin in case multiple processes have the same priority. By default, the priority of each process is set to 60.
 
-### Multi-Level Feedback Queue (MLFQ)
+### 4. Multi-Level Feedback Queue (MLFQ)
 Allows processes to move between various priority queues (in this case, 5 queues), based on how much CPU time they take to execute and CPU bursts.
 
 ## Reason for Scheduling Getting Exploited
